@@ -1,0 +1,70 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: transparent;
+  min-height: 100vh;
+  border-top: 6px solid #f2b65b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 60px;
+}
+
+h1 {
+  color: #f0f8fb;
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin-bottom: 50px;
+}
+
+#admin-login-form {
+  background: transparent;
+  width: 380px;
+  padding: 30px;
+  border-radius: 6px;
+  box-shadow: 0 16px 38px rgba(1, 10, 19, .34);
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  color: #d9f4f0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="password"] {
+  background: rgba(4, 22, 36, .55);
+  border: 1px solid rgba(157, 208, 217, .34);
+  color: #f0f8fb;
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  margin-bottom: 15px;
+  outline: none;
+}
+
+button[type="submit"] {
+  background: #18a6a6;
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.2s;
+}
+
+button[type="submit"]:hover {
+  background: #f2b65b;
+  color: #182b3b;
+}

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enquiries | Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="theme.css">
+</head>
+<body>
+    <header class="top-header">
+        <h3>Dashboard</h3>
+        <div class="user">Hello <span id="username"></span></div>
+    </header>
+
+    <aside class="sidebar">
+        <div class="menu-title">
+            <h2>Menus</h2>
+            <span>↔</span>
+        </div>
+        <nav>
+            <a href="home.html"><span>Home</span><span>⌂</span></a>
+            <a href="all-pages.html"><span>All pages</span><span>♟</span></a>
+            <a href="add-page.html"><span>Add new page</span><span>⚑</span></a>
+            <a class="active" href="enquiries.html"><span>Enquiries</span><span>✉</span></a>
+            <a href="blogs.html"><span>All Blogs</span><span>?</span></a>
+            <a href="add-blog.html"><span>Add new blog</span><span>♨</span></a>
+            <a href="#" id="logout-link"><span>Logout</span><span>▣</span></a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <a class="dashboard-back-link" href="dashboard.html">← Back to Dashboard</a>
+        <section class="messages-section">
+            <div class="messages-heading">
+                <div>
+                    <p class="section-label">Contact us</p>
+                    <h1>Enquiries</h1>
+                </div>
+                <button id="refresh-messages" type="button">Refresh</button>
+            </div>
+            <p id="messages-status">Loading messages...</p>
+            <div id="contact-messages" class="contact-messages"></div>
+        </section>
+    </main>
+
+    <script src="enquiries.js"></script>
+</body>
+</html>

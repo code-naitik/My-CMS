@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Add New Page</title>
+
+    <link rel="stylesheet" href="add-page.css">
+    <link rel="stylesheet" href="theme.css">
+
+</head>
+
+<body>
+
+    <header>
+
+        <h2>Add New Page</h2>
+
+        <a href="dashboard.html">← Back to Dashboard</a>
+
+    </header>
+
+
+    <main>
+
+        <div class="form-box">
+
+            <h1>Add New Page</h1>
+
+            <form id="page-form">
+
+                <label>Title</label>
+
+                <input
+                    type="text"
+                    id="title"
+                    placeholder="Enter page title"
+                    required
+                >
+
+
+                <label>YouTube URL</label>
+
+                <input
+                    type="text"
+                    id="youtube_url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    required
+                >
+
+
+                <label>Description</label>
+
+                <textarea
+                    id="description"
+                    placeholder="Enter description"
+                ></textarea>
+
+
+                <button type="submit">
+                    Add Page
+                </button>
+
+            </form>
+
+        </div>
+
+
+        <!-- Existing Pages -->
+
+        <div class="pages-box">
+
+            <h2>Existing Pages</h2>
+
+            <div id="pages"></div>
+
+        </div>
+
+    </main>
+
+
+    <script src="add-page.js"></script>
+
+</body>
+
+</html>

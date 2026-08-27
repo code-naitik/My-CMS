@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blogs | Naitik</title>
+    <link rel="stylesheet" href="blogs.css">
+    <link rel="stylesheet" href="theme.css">
+</head>
+<body>
+    <header>
+        <h2>Naitik</h2>
+        <nav>
+            <a href="home.html">Home</a>
+            <a href="home.html#videos">Videos</a>
+            <a href="blogs.html" aria-current="page">Blogs</a>
+            <a href="contact.html">Contact Us</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="page-intro">
+            <p class="eyebrow">Learning notes</p>
+            <h1>Programming Blogs</h1>
+            <p>Choose a topic to read concise notes and key concepts.</p>
+        </section>
+
+        <section class="published-section">
+            <div class="section-heading">
+                <p class="eyebrow">Fresh from the blog</p>
+                <h2>Latest Posts</h2>
+            </div>
+            <div id="published-blogs" class="blog-grid"></div>
+        </section>
+
+        <section class="blog-grid" aria-label="Blog topics">
+            <a class="topic-card" href="blog-notes.html?topic=html"><span>01</span><h2>HTML</h2><p>Structure web pages with semantic markup.</p></a>
+            <a class="topic-card" href="blog-notes.html?topic=css"><span>02</span><h2>CSS</h2><p>Style layouts, colors, and responsive interfaces.</p></a>
+            <a class="topic-card" href="blog-notes.html?topic=javascript"><span>03</span><h2>JavaScript</h2><p>Add logic and interactivity to the browser.</p></a>
+            <a class="topic-card" href="blog-notes.html?topic=python"><span>04</span><h2>Python</h2><p>A clear, versatile language for many tasks.</p></a>
+            <a class="topic-card" href="blog-notes.html?topic=nodejs"><span>05</span><h2>Node.js</h2><p>Run JavaScript on the server.</p></a>
+            <a class="topic-card" href="blog-notes.html?topic=expressjs"><span>06</span><h2>Express.js</h2><p>Build APIs and web servers with Node.js.</p></a>
+            <a class="topic-card" href="blog-notes.html?topic=reactjs"><span>07</span><h2>React.js</h2><p>Compose user interfaces from reusable components.</p></a>
+        </section>
+    </main>
+
+    <footer><p>© 2026 Naitik. All rights reserved.</p></footer>
+    <script src="blogs.js"></script>
+</body>
+</html>
