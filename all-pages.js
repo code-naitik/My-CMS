@@ -1,3 +1,5 @@
+const isAdmin = !!localStorage.getItem("username");
+
 async function loadPages() {
 
     try {
@@ -56,6 +58,7 @@ async function loadPages() {
 
                 <p>${page.description || ""}</p>
 
+                ${isAdmin ? `
                 <div class="buttons">
 
                     <button
@@ -77,7 +80,7 @@ async function loadPages() {
 
                     </button>
 
-                </div>
+                </div>` : ""}
 
             `;
 
@@ -99,6 +102,10 @@ async function loadPages() {
 
 
 async function editTitle(id) {
+
+    if (!isAdmin) {
+        return;
+    }
 
     const newTitle = prompt("Enter new title:");
 
@@ -142,6 +149,10 @@ async function editTitle(id) {
 
 
 async function deletePage(id) {
+
+    if (!isAdmin) {
+        return;
+    }
 
     const answer = confirm(
         "Are you sure you want to delete this video?"
