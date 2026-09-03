@@ -1,33 +1,55 @@
-const postContainer = document.querySelector("#post");
-const postId = new URLSearchParams(window.location.search).get("id");
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
 
-async function loadPost() {
-    if (!postId) {
-        postContainer.textContent = "Blog post not found.";
-        return;
-    }
+const container = document.querySelector("#blog-content");
 
-    try {
-        const response = await fetch(`http://127.0.0.1:3000/blogs/${postId}`);
-        const post = await response.json();
+if (!id) {
+    container.innerHTML = `
+        <p>Blog post ID is missing.</p>
+    `;
+} else {
 
-        if (!response.ok) {
-            throw new Error(post.message || "Blog post not found.");
-        }
-
-        document.title = `${post.title} | Naitik`;
-        const title = document.createElement("h1");
-        title.textContent = post.title;
-        const date = document.createElement("p");
-        date.className = "message-sender";
-        date.textContent = new Date(post.created_at).toLocaleDateString();
-        const content = document.createElement("p");
-        content.className = "message-body";
-        content.textContent = post.content;
-        postContainer.replaceChildren(title, date, content);
-    } catch (error) {
-        postContainer.textContent = error.message || "Could not load this blog post.";
-    }
+    loadBlog();
 }
 
-loadPost();
+
+async function loadBlog() {
+
+    try {
+
+        const response = await fetch(
+            `/blogs/${id}`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "Failed to load blog");
+        }
+
+        const title = document.createElement("h1");
+        title.textContent = data.title;
+
+        const date = document.createElement("p");
+        date.className = "date";
+        date.textContent = new Date(data.created_at).toLocaleDateString();
+
+        const contentDiv = document.createElement("div");
+        contentDiv.className = "content";
+        contentDiv.innerHTML = data.content;
+
+        const article = document.createElement("article");
+        article.className = "blog-post";
+        article.append(title, date, contentDiv);
+
+        container.replaceChildren(article);
+
+    } catch (error) {
+
+        console.error("Blog loading error:", error);
+
+        container.innerHTML = `
+            <p>${error.message}</p>
+        `;
+    }
+}

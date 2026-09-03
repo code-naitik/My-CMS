@@ -1,28 +1,49 @@
 const publishedBlogs = document.querySelector("#published-blogs");
+const topicNotes = document.querySelector("#topic-notes");
+const isAdmin = !!localStorage.getItem("username");
 
 function excerpt(content) {
-    return content.length > 130 ? `${content.slice(0, 130)}…` : content;
+    const plainText = content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    return plainText.length > 130 ? `${plainText.slice(0, 130)}…` : plainText;
 }
+
+// ----- Published Blog Posts -----
 
 async function loadPublishedBlogs() {
     try {
-        const response = await fetch("http://127.0.0.1:3000/blogs");
+        const response = await fetch("/blogs");
         const posts = await response.json();
 
         if (!response.ok) {
             throw new Error();
         }
 
-        posts.forEach((post) => {
-            const card = document.createElement("a");
-            card.className = "topic-card published-post-card";
-            card.href = `blog-post.html?id=${post.id}`;
+        publishedBlogs.innerHTML = "";
 
+        posts.forEach((post) => {
             const date = new Date(post.created_at).toLocaleDateString();
-            card.innerHTML = `<span>Blog post</span><h2></h2><p></p><time></time>`;
-            card.querySelector("h2").textContent = post.title;
-            card.querySelector("p").textContent = excerpt(post.content);
-            card.querySelector("time").textContent = date;
+
+            const card = document.createElement("div");
+            card.className = "topic-card published-post-card";
+
+            card.innerHTML = `
+                <a href="blog-post.html?id=${post.id}" class="post-link">
+                    <span>Blog post</span>
+                    <h2>${post.title}</h2>
+                    <p>${excerpt(post.content)}</p>
+                    <time>${date}</time>
+                </a>
+                ${isAdmin ? `
+                <div class="buttons">
+                    <button class="edit-btn" onclick="editBlog(${post.id})" title="Edit">
+                        <i class="fa-solid fa-pencil"></i>
+                    </button>
+                    <button class="delete-btn" onclick="deleteBlog(${post.id})" title="Delete">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>` : ""}
+            `;
+
             publishedBlogs.appendChild(card);
         });
     } catch {
@@ -30,4 +51,83 @@ async function loadPublishedBlogs() {
     }
 }
 
+function editBlog(id) {
+    window.location.href = `edit-blog.html?id=${id}`;
+}
+
+async function deleteBlog(id) {
+    const confirmed = confirm("Are you sure you want to delete this blog post?");
+    if (!confirmed) return;
+
+    const response = await fetch(`/blogs/${id}`, {
+        method: "DELETE"
+    });
+
+    const data = await response.json();
+    alert(data.message);
+    loadPublishedBlogs();
+}
+
+// ----- Topic Notes -----
+
+async function loadTopics() {
+    try {
+        const response = await fetch("/topics");
+        const topics = await response.json();
+
+        if (!response.ok) throw new Error();
+
+        topicNotes.innerHTML = "";
+
+        topics.forEach((topic, index) => {
+            const card = document.createElement("div");
+            card.className = "topic-card published-post-card";
+
+            card.innerHTML = `
+                <a href="blog-notes.html?id=${topic.id}" class="post-link">
+                    <span>${String(index + 1).padStart(2, "0")}</span>
+                    <h2>${topic.title}</h2>
+                    <p>${excerpt(topic.content)}</p>
+                </a>
+                ${isAdmin ? `
+                <div class="buttons">
+                    <button class="edit-btn" onclick="editTopic(${topic.id})" title="Edit">
+                        <i class="fa-solid fa-pencil"></i>
+                    </button>
+                    <button class="delete-btn" onclick="deleteTopic(${topic.id})" title="Delete">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>` : ""}
+            `;
+
+            topicNotes.appendChild(card);
+        });
+    } catch {
+        topicNotes.innerHTML = "";
+    }
+}
+
+function editTopic(id) {
+    window.location.href = `edit-topic.html?id=${id}`;
+}
+
+async function deleteTopic(id) {
+    const confirmed = confirm("Are you sure you want to delete this topic?");
+    if (!confirmed) return;
+
+    const response = await fetch(`/topics/${id}`, { method: "DELETE" });
+    const data = await response.json();
+    alert(data.message);
+    loadTopics();
+}
+
 loadPublishedBlogs();
+loadTopics();
+
+const dashboardLink = document.querySelector("#dashboard-link");
+
+if (isAdmin) {
+    dashboardLink.style.display = "inline";
+} else {
+    dashboardLink.style.display = "none";
+}

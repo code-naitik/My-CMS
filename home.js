@@ -2,7 +2,7 @@ async function loadVideos() {
 
     try {
 
-        const response = await fetch("http://127.0.0.1:3000/pages");
+        const response = await fetch("/pages");
 
         const pages = await response.json();
 
@@ -61,3 +61,16 @@ async function loadVideos() {
 }
 
 loadVideos();
+
+const username = localStorage.getItem("username");
+
+const dashboardLink = document.querySelector("#dashboard-link");
+const adminLoginLink = document.querySelector("#admin-login-link");
+
+if (username) {
+    dashboardLink.style.display = "inline";
+    adminLoginLink.style.display = "none";
+} else {
+    dashboardLink.style.display = "none";
+    adminLoginLink.style.display = "inline";
+}

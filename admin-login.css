@@ -8,7 +8,6 @@ body {
   font-family: 'Segoe UI', Arial, sans-serif;
   background: transparent;
   min-height: 100vh;
-  border-top: 6px solid #f2b65b;
   display: flex;
   flex-direction: column;
   align-items: center;

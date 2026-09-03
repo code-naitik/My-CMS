@@ -14,7 +14,7 @@ form.addEventListener("submit", async function(event) {
     const description = document.querySelector("#description").value;
 
 
-    const response = await fetch("http://127.0.0.1:3000/pages", {
+    const response = await fetch("/pages", {
 
         method: "POST",
 
@@ -52,7 +52,7 @@ form.addEventListener("submit", async function(event) {
 async function loadPages() {
 
     const response = await fetch(
-        "http://127.0.0.1:3000/pages"
+        "/pages"
     );
 
     const pages = await response.json();
@@ -107,7 +107,7 @@ async function deletePage(id) {
 
 
     const response = await fetch(
-        `http://127.0.0.1:3000/pages/${id}`,
+        `/pages/${id}`,
         {
             method: "DELETE"
         }

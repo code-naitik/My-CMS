@@ -1,49 +1,51 @@
 const form = document.querySelector("#admin-login-form");
 
-form.addEventListener("submit", async function(event) {
+if (form) {
+    form.addEventListener("submit", async function(event) {
 
-    event.preventDefault();
+        event.preventDefault();
 
-    const username = document.querySelector("#username").value;
-    const password = document.querySelector("#password").value;
+        const username = document.querySelector("#username").value;
+        const password = document.querySelector("#password").value;
 
-    if (username === "" || password === "") {
-        alert("Please fill all fields");
-        return;
-    }
+        if (username === "" || password === "") {
+            showToast("Please fill all fields", "error");
+            return;
+        }
 
-    try {
+        try {
 
-        const response = await fetch("http://127.0.0.1:3000/login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                username: username,
-                password: password
-            })
-        });
+            const response = await fetch("/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (data.message === "Login successful") {
+            if (data.message === "Login successful") {
 
-            localStorage.setItem("username", username);
+                localStorage.setItem("username", username);
 
-            window.location.href = "dashboard.html";
+                window.location.href = "dashboard.html";
 
-        } else {
+            } else {
 
-            alert(data.message);
+                showToast(data.message, "error");
+
+            }
+
+        } catch (error) {
+
+            console.log(error);
+            showToast("Server connection failed", "error");
 
         }
 
-    } catch (error) {
-
-        console.log(error);
-        alert("Server connection failed");
-
-    }
-
-});
+    });
+}

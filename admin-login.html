@@ -3,20 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Admin Login</title>
+    
+<link rel="stylesheet" href="toast.css">
     <link rel="stylesheet" href="admin-login.css">
     <link rel="stylesheet" href="theme.css">
 </head>
+
 <body>
+
     <h1>Admin Login</h1>
+
     <form id="admin-login-form">
+
         <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
+
+        <input
+            type="text"
+            id="username"
+            name="username"
+            required
+        >
+
         <br>
+
         <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
+
+        <input
+            type="password"
+            id="password"
+            name="password"
+            required
+        >
+
         <br>
+
         <button type="submit">Login</button>
+
+    </form>
+
+
     <script src="admin-login.js"></script>
+<script src="toast.js"></script>
+
 </body>
 </html>

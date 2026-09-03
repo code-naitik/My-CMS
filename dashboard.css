@@ -104,16 +104,21 @@ nav a.active {
 
 /* Main Content */
 
-.main-content {
+ .main-content {
     margin-left: 265px;
 
     padding: 40px;
 
     min-height: calc(100vh - 55px);
+
+    background: transparent;
 }
 
 .main-content h1 {
     font-size: 28px;
+    color: #ffffff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    display: inline-block;
 }
 
 .dashboard-back-link {

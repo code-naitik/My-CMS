@@ -1,0 +1,238 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(
+        135deg,
+        #e6f3f0,
+        #fff3eb,
+        #dcecf5
+    );
+    color: #29384d;
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* ================================
+   HEADER
+================================ */
+
+header {
+    height: 67px;
+
+    background: linear-gradient(
+        90deg,
+        #155d70,
+        #318caf
+    );
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 44px;
+
+    color: white;
+}
+
+
+header h2 {
+    font-size: 26px;
+    color: white;
+}
+
+
+header nav {
+    display: flex;
+    gap: 30px;
+}
+
+
+header nav a {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+
+    transition: 0.2s;
+}
+
+
+header nav a:hover {
+    color: #ffd76a;
+}
+
+
+/* ================================
+   MAIN
+================================ */
+
+main {
+    width: 100%;
+    max-width: 1000px;
+
+    margin: 0 auto;
+
+    padding: 55px 30px 80px;
+
+    flex: 1;
+}
+
+
+/* ================================
+   BACK BUTTON
+================================ */
+
+.back-link {
+    display: inline-block;
+
+    margin-bottom: 35px;
+
+    color: #17657c;
+
+    text-decoration: none;
+
+    font-size: 16px;
+    font-weight: 600;
+}
+
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+
+/* ================================
+   BLOG ARTICLE
+================================ */
+
+.blog-post {
+    background: rgba(255, 255, 255, 0.88);
+
+    border-radius: 14px;
+
+    padding: 45px;
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.08);
+
+    border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+
+/* Blog title */
+
+.blog-post h1 {
+    font-size: 44px;
+
+    line-height: 1.2;
+
+    color: #29384d;
+
+    margin-bottom: 18px;
+}
+
+
+/* Date */
+
+.blog-date {
+    color: #6b7280;
+
+    font-size: 15px;
+
+    margin-bottom: 35px;
+
+    padding-bottom: 20px;
+
+    border-bottom: 1px solid #ddd;
+}
+
+
+/* Blog content */
+
+.blog-content {
+    font-size: 18px;
+
+    line-height: 1.8;
+
+    color: #43546a;
+
+    white-space: pre-wrap;
+}
+
+
+/* ================================
+   FOOTER
+================================ */
+
+footer {
+    background: linear-gradient(
+        90deg,
+        #155d70,
+        #318caf
+    );
+
+    color: white;
+
+    text-align: center;
+
+    padding: 25px;
+
+    font-size: 15px;
+}
+
+
+/* ================================
+   MOBILE
+================================ */
+
+@media (max-width: 700px) {
+
+    header {
+        height: auto;
+
+        padding: 18px 20px;
+
+        flex-direction: column;
+
+        gap: 15px;
+    }
+
+
+    header nav {
+        gap: 15px;
+
+        flex-wrap: wrap;
+
+        justify-content: center;
+    }
+
+
+    main {
+        padding: 35px 15px 50px;
+    }
+
+
+    .blog-post {
+        padding: 25px 20px;
+    }
+
+
+    .blog-post h1 {
+        font-size: 32px;
+    }
+
+
+    .blog-content {
+        font-size: 16px;
+    }
+
+}

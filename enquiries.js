@@ -46,7 +46,7 @@ async function loadContactMessages() {
     messagesContainer.replaceChildren();
 
     try {
-        const response = await fetch("http://127.0.0.1:3000/contact-messages");
+        const response = await fetch("/contact-messages");
         const messages = await response.json();
 
         if (!response.ok) {

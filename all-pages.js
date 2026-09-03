@@ -2,7 +2,7 @@ async function loadPages() {
 
     try {
 
-        const response = await fetch("http://127.0.0.1:3000/pages");
+        const response = await fetch("/pages");
 
         const pages = await response.json();
 
@@ -116,7 +116,7 @@ async function editTitle(id) {
 
 
     const response = await fetch(
-        `http://127.0.0.1:3000/pages/${id}`,
+        `/pages/${id}`,
         {
             method: "PUT",
 
@@ -154,7 +154,7 @@ async function deletePage(id) {
 
 
     const response = await fetch(
-        `http://127.0.0.1:3000/pages/${id}`,
+        `/pages/${id}`,
         {
             method: "DELETE"
         }
