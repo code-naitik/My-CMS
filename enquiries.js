@@ -6,8 +6,15 @@ if (!username) {
     document.querySelector("#username").textContent = username;
 }
 
-document.querySelector("#logout-link").addEventListener("click", (event) => {
+document.querySelector("#logout-link").addEventListener("click", async (event) => {
     event.preventDefault();
+
+    try {
+        await fetch("/logout", { method: "POST" });
+    } catch (error) {
+        console.log("Logout request failed:", error);
+    }
+
     localStorage.removeItem("username");
     window.location.href = "home.html";
 });

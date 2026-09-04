@@ -6,6 +6,7 @@ const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 
 const app = express();
 
@@ -55,6 +56,92 @@ const uploadAttachment = multer({
 
 app.use(cors());
 app.use(express.json());
+
+
+// ======================================================
+// SESSION-BASED AUTH
+//
+// /login previously only checked the DB and replied with a
+// message — it never issued anything to prove you were logged
+// in. The dashboard link and admin pages were only hidden by a
+// localStorage flag the browser sets, which anyone can set
+// themselves (or just visit the page/API directly). This block
+// adds a real server-side session so every admin page and
+// admin API route can actually verify the request is logged in.
+// ======================================================
+
+const sessions = new Map(); // token -> { username, expires }
+const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+function createSession(username) {
+    const token = crypto.randomBytes(32).toString("hex");
+    sessions.set(token, { username, expires: Date.now() + SESSION_DURATION });
+    return token;
+}
+
+function getSessionFromRequest(req) {
+    const cookieHeader = req.headers.cookie;
+    if (!cookieHeader) return null;
+
+    const match = cookieHeader
+        .split(";")
+        .map((c) => c.trim())
+        .find((c) => c.startsWith("sid="));
+
+    if (!match) return null;
+
+    const token = match.slice(4);
+    const session = sessions.get(token);
+
+    if (!session) return null;
+
+    if (session.expires < Date.now()) {
+        sessions.delete(token);
+        return null;
+    }
+
+    return { token, ...session };
+}
+
+// Use on any admin-only API route (adding/editing/deleting content).
+function requireAuth(req, res, next) {
+    const session = getSessionFromRequest(req);
+
+    if (!session) {
+        return res.status(401).json({
+            message: "Please log in"
+        });
+    }
+
+    req.username = session.username;
+    next();
+}
+
+// Serve the admin-only HTML pages themselves only to logged-in
+// users. These routes are registered before express.static, so
+// Express matches them first and static never gets a chance to
+// hand the file out for free.
+const adminPages = [
+    "dashboard.html",
+    "add-blog.html",
+    "edit-blog.html",
+    "add-page.html",
+    "edit-topic.html",
+    "enquiries.html"
+];
+
+adminPages.forEach((page) => {
+    app.get(`/${page}`, (req, res) => {
+        const session = getSessionFromRequest(req);
+
+        if (!session) {
+            return res.redirect("/admin-login.html");
+        }
+
+        res.sendFile(path.join(__dirname, page));
+    });
+});
+
 app.use(express.static(__dirname));
 
 
@@ -124,6 +211,14 @@ app.post("/login", (req, res) => {
 
         if (result.length > 0) {
 
+            const token = createSession(username);
+
+            res.cookie("sid", token, {
+                httpOnly: true,
+                sameSite: "lax",
+                maxAge: SESSION_DURATION
+            });
+
             return res.json({
                 message: "Login successful"
             });
@@ -134,6 +229,44 @@ app.post("/login", (req, res) => {
             message: "Wrong username or password"
         });
 
+    });
+
+});
+
+
+// LOGOUT
+
+app.post("/logout", (req, res) => {
+
+    const session = getSessionFromRequest(req);
+
+    if (session) {
+        sessions.delete(session.token);
+    }
+
+    res.clearCookie("sid");
+
+    res.json({
+        message: "Logged out"
+    });
+
+});
+
+
+// CHECK CURRENT SESSION
+
+app.get("/me", (req, res) => {
+
+    const session = getSessionFromRequest(req);
+
+    if (!session) {
+        return res.status(401).json({
+            message: "Not logged in"
+        });
+    }
+
+    res.json({
+        username: session.username
     });
 
 });
@@ -193,7 +326,7 @@ app.post("/contact-messages", (req, res) => {
 
 // GET CONTACT MESSAGES
 
-app.get("/contact-messages", (req, res) => {
+app.get("/contact-messages", requireAuth, (req, res) => {
 
     const sql = `
         SELECT *
@@ -292,7 +425,7 @@ app.get("/blogs/:id", (req, res) => {
 
 // ADD BLOG POST
 
-app.post("/blogs", uploadAttachment.single("attachment"), (req, res) => {
+app.post("/blogs", requireAuth, uploadAttachment.single("attachment"), (req, res) => {
 
     const title = req.body.title?.trim();
     const content = req.body.content?.trim();
@@ -345,7 +478,7 @@ app.post("/blogs", uploadAttachment.single("attachment"), (req, res) => {
 
 // EDIT BLOG POST
 
-app.put("/blogs/:id", uploadAttachment.single("attachment"), (req, res) => {
+app.put("/blogs/:id", requireAuth, uploadAttachment.single("attachment"), (req, res) => {
 
     const id = req.params.id;
 
@@ -437,7 +570,7 @@ app.put("/blogs/:id", uploadAttachment.single("attachment"), (req, res) => {
 
 // DELETE BLOG POST
 
-app.delete("/blogs/:id", (req, res) => {
+app.delete("/blogs/:id", requireAuth, (req, res) => {
 
     const id = req.params.id;
 
@@ -553,7 +686,7 @@ app.get("/topics/:id", (req, res) => {
 
 // EDIT TOPIC
 
-app.put("/topics/:id", (req, res) => {
+app.put("/topics/:id", requireAuth, (req, res) => {
 
     const title = req.body.title?.trim();
     const content = req.body.content?.trim();
@@ -599,7 +732,7 @@ app.put("/topics/:id", (req, res) => {
 
 // DELETE TOPIC
 
-app.delete("/topics/:id", (req, res) => {
+app.delete("/topics/:id", requireAuth, (req, res) => {
 
     const sql = `
         DELETE FROM topics
@@ -662,7 +795,7 @@ app.get("/pages", (req, res) => {
 
 // ADD NEW PAGE
 
-app.post("/pages", (req, res) => {
+app.post("/pages", requireAuth, (req, res) => {
 
     const title = req.body.title?.trim();
     const youtube_url = req.body.youtube_url?.trim();
@@ -710,7 +843,7 @@ app.post("/pages", (req, res) => {
 
 // DELETE PAGE
 
-app.delete("/pages/:id", (req, res) => {
+app.delete("/pages/:id", requireAuth, (req, res) => {
 
     const id = req.params.id;
 
@@ -742,7 +875,7 @@ app.delete("/pages/:id", (req, res) => {
 
 // EDIT PAGE TITLE
 
-app.put("/pages/:id", (req, res) => {
+app.put("/pages/:id", requireAuth, (req, res) => {
 
     const id = req.params.id;
     const title = req.body.title?.trim();
