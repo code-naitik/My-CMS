@@ -62,15 +62,25 @@ async function loadVideos() {
 
 loadVideos();
 
-const username = localStorage.getItem("username");
-
 const dashboardLink = document.querySelector("#dashboard-link");
 const adminLoginLink = document.querySelector("#admin-login-link");
 
-if (username) {
-    dashboardLink.style.display = "inline";
-    adminLoginLink.style.display = "none";
-} else {
+async function updateAuthLinks() {
+    try {
+        const response = await fetch("/me");
+
+        if (response.ok) {
+            dashboardLink.style.display = "inline";
+            adminLoginLink.style.display = "none";
+            return;
+        }
+    } catch (error) {
+        console.log("Auth check failed:", error);
+    }
+
     dashboardLink.style.display = "none";
     adminLoginLink.style.display = "inline";
+    localStorage.removeItem("username");
 }
+
+updateAuthLinks();
