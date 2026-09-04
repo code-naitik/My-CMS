@@ -100,17 +100,22 @@ form.addEventListener("submit", async (event) => {
         const title = document.querySelector("#title").value.trim();
         const content = quill.root.innerHTML.trim();
         const isEmpty = quill.getText().trim().length === 0;
+        const attachmentInput = document.querySelector("#attachment");
 
         if (isEmpty) {
             throw new Error("Please write something before publishing.");
         }
 
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("content", content);
+        if (attachmentInput.files[0]) {
+            formData.append("attachment", attachmentInput.files[0]);
+        }
+
         const response = await fetch("/blogs", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ title, content })
+            body: formData
         });
 
         const data = await response.json();

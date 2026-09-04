@@ -42,6 +42,15 @@ async function loadBlog() {
         article.className = "blog-post";
         article.append(title, date, contentDiv);
 
+        if (data.attachment_path) {
+            const attachmentLink = document.createElement("a");
+            attachmentLink.className = "attachment-download";
+            attachmentLink.href = data.attachment_path;
+            attachmentLink.setAttribute("download", data.attachment_name);
+            attachmentLink.textContent = `📎 Download attachment: ${data.attachment_name}`;
+            article.append(attachmentLink);
+        }
+
         container.replaceChildren(article);
 
     } catch (error) {

@@ -23,7 +23,44 @@
                 <input type="text" id="title" required>
 
                 <label for="editor-label">Content</label>
+
+                <div id="toolbar" class="ql-toolbar ql-snow">
+                    <button class="ql-bold" type="button"></button>
+                    <button class="ql-italic" type="button"></button>
+
+                    <span class="underline-wrapper">
+                        <button type="button" id="underline-btn" class="underline-custom-btn" title="Underline color">
+                            <span class="u-letter">U</span>
+                            <span class="u-caret">▾</span>
+                        </button>
+
+                        <div id="underline-color-popup" class="color-popup">
+                            <button type="button" class="color-swatch" data-color="" style="background:#888;" title="No color (default)"></button>
+                            <button type="button" class="color-swatch" data-color="#e7edf5" style="background:#e7edf5;" title="White"></button>
+                            <button type="button" class="color-swatch" data-color="#e76f51" style="background:#e76f51;" title="Coral"></button>
+                            <button type="button" class="color-swatch" data-color="#f1b94b" style="background:#f1b94b;" title="Gold"></button>
+                            <button type="button" class="color-swatch" data-color="#9ed8c8" style="background:#9ed8c8;" title="Mint"></button>
+                            <button type="button" class="color-swatch" data-color="#818cf8" style="background:#818cf8;" title="Violet"></button>
+                            <button type="button" class="color-swatch" data-color="#d55d6b" style="background:#d55d6b;" title="Red"></button>
+                            <button type="button" class="color-swatch remove-swatch" data-color="none" title="Remove underline">✕</button>
+                        </div>
+                    </span>
+
+                    <select class="ql-color"></select>
+                    <button class="ql-link" type="button"></button>
+                    <button class="ql-image" type="button"></button>
+                </div>
+
                 <div id="editor"></div>
+
+                <label for="attachment">Attach a file (PDF, Word, Excel, PPT, TXT, or ZIP — optional, max 10MB)</label>
+                <div id="current-attachment" style="display:none; margin-bottom: 10px;">
+                    <a id="current-attachment-link" href="#" target="_blank" rel="noopener"></a>
+                    <label style="display:inline-block; font-weight:normal; margin-left:12px;">
+                        <input type="checkbox" id="remove-attachment"> Remove this attachment
+                    </label>
+                </div>
+                <input type="file" id="attachment" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip">
 
                 <button type="submit">Save Changes</button>
             </form>

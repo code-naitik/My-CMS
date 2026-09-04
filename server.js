@@ -3,10 +3,50 @@ require("dotenv").config();
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 const app = express();
 
 const port = Number(process.env.PORT || 3000);
+
+
+// ======================================================
+// FILE UPLOADS (blog attachments)
+// ======================================================
+
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const allowedAttachmentTypes = [
+    ".pdf", ".doc", ".docx", ".ppt", ".pptx",
+    ".xls", ".xlsx", ".txt", ".zip"
+];
+
+const attachmentStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+        const safeName = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+        cb(null, `${Date.now()}-${safeName}`);
+    }
+});
+
+const uploadAttachment = multer({
+    storage: attachmentStorage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+    fileFilter: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (!allowedAttachmentTypes.includes(ext)) {
+            return cb(new Error("That file type isn't allowed"));
+        }
+        cb(null, true);
+    }
+});
 
 
 // ======================================================
@@ -189,7 +229,7 @@ app.get("/contact-messages", (req, res) => {
 app.get("/blogs", (req, res) => {
 
     const sql = `
-        SELECT id, title, content, created_at
+        SELECT id, title, content, attachment_name, attachment_path, created_at
         FROM blog_posts
         ORDER BY created_at DESC, id DESC
     `;
@@ -218,7 +258,7 @@ app.get("/blogs", (req, res) => {
 app.get("/blogs/:id", (req, res) => {
 
     const sql = `
-        SELECT id, title, content, created_at
+        SELECT id, title, content, attachment_name, attachment_path, created_at
         FROM blog_posts
         WHERE id = ?
     `;
@@ -252,12 +292,15 @@ app.get("/blogs/:id", (req, res) => {
 
 // ADD BLOG POST
 
-app.post("/blogs", (req, res) => {
+app.post("/blogs", uploadAttachment.single("attachment"), (req, res) => {
 
     const title = req.body.title?.trim();
     const content = req.body.content?.trim();
 
     if (!title || !content) {
+
+        // Clean up an uploaded file if validation fails after upload
+        if (req.file) fs.unlink(req.file.path, () => {});
 
         return res.status(400).json({
             message: "Please add a title and content"
@@ -265,15 +308,18 @@ app.post("/blogs", (req, res) => {
 
     }
 
+    const attachmentName = req.file ? req.file.originalname : null;
+    const attachmentPath = req.file ? `/uploads/${req.file.filename}` : null;
+
     const sql = `
         INSERT INTO blog_posts
-        (title, content)
-        VALUES (?, ?)
+        (title, content, attachment_name, attachment_path)
+        VALUES (?, ?, ?, ?)
     `;
 
     db.query(
         sql,
-        [title, content],
+        [title, content, attachmentName, attachmentPath],
         (err, result) => {
 
             if (err) {
@@ -299,14 +345,17 @@ app.post("/blogs", (req, res) => {
 
 // EDIT BLOG POST
 
-app.put("/blogs/:id", (req, res) => {
+app.put("/blogs/:id", uploadAttachment.single("attachment"), (req, res) => {
 
     const id = req.params.id;
 
     const title = req.body.title?.trim();
     const content = req.body.content?.trim();
+    const removeAttachment = req.body.removeAttachment === "true";
 
     if (!title || !content) {
+
+        if (req.file) fs.unlink(req.file.path, () => {});
 
         return res.status(400).json({
             message: "Please add a title and content"
@@ -314,30 +363,71 @@ app.put("/blogs/:id", (req, res) => {
 
     }
 
-    const sql = `
-        UPDATE blog_posts
-        SET title = ?, content = ?
-        WHERE id = ?
-    `;
-
+    // Find the existing attachment first, in case we need to delete the old file
     db.query(
-        sql,
-        [title, content, id],
-        (err, result) => {
+        "SELECT attachment_path FROM blog_posts WHERE id = ?",
+        [id],
+        (findErr, findResult) => {
 
-            if (err) {
-
-                console.error("Update blog error:", err);
-
-                return res.status(500).json({
-                    message: "Failed to update blog post"
-                });
-
+            if (findErr) {
+                console.error("Lookup blog error:", findErr);
+                if (req.file) fs.unlink(req.file.path, () => {});
+                return res.status(500).json({ message: "Failed to update blog post" });
             }
 
-            res.json({
-                message: "Blog post updated successfully"
-            });
+            const existingPath = findResult[0]?.attachment_path;
+
+            let attachmentName;
+            let attachmentPath;
+
+            if (req.file) {
+                // A new file was uploaded — replace the old one
+                attachmentName = req.file.originalname;
+                attachmentPath = `/uploads/${req.file.filename}`;
+            } else if (removeAttachment) {
+                // User asked to remove the attachment, no replacement
+                attachmentName = null;
+                attachmentPath = null;
+            } else {
+                // Keep whatever was there before
+                attachmentName = findResult[0]?.attachment_name ?? null;
+                attachmentPath = existingPath ?? null;
+            }
+
+            const sql = `
+                UPDATE blog_posts
+                SET title = ?, content = ?, attachment_name = ?, attachment_path = ?
+                WHERE id = ?
+            `;
+
+            db.query(
+                sql,
+                [title, content, attachmentName, attachmentPath, id],
+                (err, result) => {
+
+                    if (err) {
+
+                        console.error("Update blog error:", err);
+
+                        return res.status(500).json({
+                            message: "Failed to update blog post"
+                        });
+
+                    }
+
+                    // If we replaced or removed an old file, delete it from disk
+                    const oldFileChanged = existingPath && existingPath !== attachmentPath;
+                    if (oldFileChanged) {
+                        const oldFilePath = path.join(__dirname, existingPath);
+                        fs.unlink(oldFilePath, () => {});
+                    }
+
+                    res.json({
+                        message: "Blog post updated successfully"
+                    });
+
+                }
+            );
 
         }
     );
@@ -351,28 +441,42 @@ app.delete("/blogs/:id", (req, res) => {
 
     const id = req.params.id;
 
-    const sql = `
-        DELETE FROM blog_posts
-        WHERE id = ?
-    `;
+    db.query(
+        "SELECT attachment_path FROM blog_posts WHERE id = ?",
+        [id],
+        (findErr, findResult) => {
 
-    db.query(sql, [id], (err, result) => {
+            const attachmentPath = findResult?.[0]?.attachment_path;
 
-        if (err) {
+            const sql = `
+                DELETE FROM blog_posts
+                WHERE id = ?
+            `;
 
-            console.error("Delete blog error:", err);
+            db.query(sql, [id], (err, result) => {
 
-            return res.status(500).json({
-                message: "Failed to delete blog post"
+                if (err) {
+
+                    console.error("Delete blog error:", err);
+
+                    return res.status(500).json({
+                        message: "Failed to delete blog post"
+                    });
+
+                }
+
+                if (attachmentPath) {
+                    fs.unlink(path.join(__dirname, attachmentPath), () => {});
+                }
+
+                res.json({
+                    message: "Blog post deleted successfully"
+                });
+
             });
 
         }
-
-        res.json({
-            message: "Blog post deleted successfully"
-        });
-
-    });
+    );
 
 });
 
@@ -687,6 +791,19 @@ app.put("/pages/:id", (req, res) => {
 
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/index.html");
+});
+
+// ======================================================
+// FILE UPLOAD ERROR HANDLER
+// ======================================================
+
+app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError || err) {
+        return res.status(400).json({
+            message: err.message || "File upload failed"
+        });
+    }
+    next();
 });
 
 // ======================================================

@@ -1,7 +1,7 @@
-const form = document.querySelector("#admin-login-form");
+const loginForm = document.querySelector("#admin-login-form");
 
-if (form) {
-    form.addEventListener("submit", async function(event) {
+if (loginForm) {
+    loginForm.addEventListener("submit", async function(event) {
 
         event.preventDefault();
 
