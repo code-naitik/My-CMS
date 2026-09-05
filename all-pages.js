@@ -1,4 +1,4 @@
-const isAdmin = !!localStorage.getItem("username");
+let isAdmin = false;
 
 async function loadPages() {
 
@@ -126,6 +126,7 @@ async function editTitle(id) {
         `/pages/${id}`,
         {
             method: "PUT",
+            credentials: "same-origin",
 
             headers: {
                 "Content-Type": "application/json"
@@ -167,7 +168,8 @@ async function deletePage(id) {
     const response = await fetch(
         `/pages/${id}`,
         {
-            method: "DELETE"
+            method: "DELETE",
+            credentials: "same-origin"
         }
     );
 
@@ -181,4 +183,12 @@ async function deletePage(id) {
 }
 
 
-loadPages();
+fetch("/session", { credentials: "same-origin" })
+    .then((res) => res.json())
+    .then((data) => {
+        isAdmin = !!data.loggedIn;
+        loadPages();
+    })
+    .catch(() => {
+        loadPages();
+    });

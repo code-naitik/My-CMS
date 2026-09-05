@@ -65,22 +65,18 @@ loadVideos();
 const dashboardLink = document.querySelector("#dashboard-link");
 const adminLoginLink = document.querySelector("#admin-login-link");
 
-async function updateAuthLinks() {
-    try {
-        const response = await fetch("/me");
-
-        if (response.ok) {
+fetch("/session", { credentials: "same-origin" })
+    .then((res) => res.json())
+    .then((data) => {
+        if (data.loggedIn) {
             dashboardLink.style.display = "inline";
             adminLoginLink.style.display = "none";
-            return;
+        } else {
+            dashboardLink.style.display = "none";
+            adminLoginLink.style.display = "inline";
         }
-    } catch (error) {
-        console.log("Auth check failed:", error);
-    }
-
-    dashboardLink.style.display = "none";
-    adminLoginLink.style.display = "inline";
-    localStorage.removeItem("username");
-}
-
-updateAuthLinks();
+    })
+    .catch(() => {
+        dashboardLink.style.display = "none";
+        adminLoginLink.style.display = "inline";
+    });

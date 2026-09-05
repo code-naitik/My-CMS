@@ -1,5 +1,4 @@
-const username = localStorage.getItem("username");
-if (!username) window.location.href = "admin-login.html";
+requireLogin();
 
 const postId = new URLSearchParams(window.location.search).get("id");
 const form = document.querySelector("#blog-form");
@@ -136,6 +135,7 @@ form.addEventListener("submit", async (event) => {
 
         const response = await fetch(`/blogs/${postId}`, {
             method: "PUT",
+            credentials: "same-origin",
             body: formData
         });
 

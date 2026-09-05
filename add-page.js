@@ -1,3 +1,6 @@
+requireLogin();
+wireLogoutLink();
+
 const form = document.querySelector("#page-form");
 
 
@@ -17,6 +20,7 @@ form.addEventListener("submit", async function(event) {
     const response = await fetch("/pages", {
 
         method: "POST",
+        credentials: "same-origin",
 
         headers: {
             "Content-Type": "application/json"
@@ -109,7 +113,8 @@ async function deletePage(id) {
     const response = await fetch(
         `/pages/${id}`,
         {
-            method: "DELETE"
+            method: "DELETE",
+            credentials: "same-origin"
         }
     );
 

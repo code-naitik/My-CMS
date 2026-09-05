@@ -6,7 +6,8 @@ const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const crypto = require("crypto");
+const session = require("express-session");
+const bcrypt = require("bcrypt");
 
 const app = express();
 
@@ -54,90 +55,51 @@ const uploadAttachment = multer({
 // MIDDLEWARE
 // ======================================================
 
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
 app.use(express.json());
+app.set("trust proxy", 1);
 
-
-// ======================================================
-// SESSION-BASED AUTH
-//
-// /login previously only checked the DB and replied with a
-// message — it never issued anything to prove you were logged
-// in. The dashboard link and admin pages were only hidden by a
-// localStorage flag the browser sets, which anyone can set
-// themselves (or just visit the page/API directly). This block
-// adds a real server-side session so every admin page and
-// admin API route can actually verify the request is logged in.
-// ======================================================
-
-const sessions = new Map(); // token -> { username, expires }
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-
-function createSession(username) {
-    const token = crypto.randomBytes(32).toString("hex");
-    sessions.set(token, { username, expires: Date.now() + SESSION_DURATION });
-    return token;
-}
-
-function getSessionFromRequest(req) {
-    const cookieHeader = req.headers.cookie;
-    if (!cookieHeader) return null;
-
-    const match = cookieHeader
-        .split(";")
-        .map((c) => c.trim())
-        .find((c) => c.startsWith("sid="));
-
-    if (!match) return null;
-
-    const token = match.slice(4);
-    const session = sessions.get(token);
-
-    if (!session) return null;
-
-    if (session.expires < Date.now()) {
-        sessions.delete(token);
-        return null;
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    name: "cms.sid",
+    resave: false,
+    saveUninitialized: false,
+    rolling: true, // sliding expiry — resets on activity, still dies if you walk away
+    cookie: {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 20 * 60 * 1000 // auto-logout after 20 minutes idle
     }
+}));
 
-    return { token, ...session };
-}
-
-// Use on any admin-only API route (adding/editing/deleting content).
-function requireAuth(req, res, next) {
-    const session = getSessionFromRequest(req);
-
-    if (!session) {
-        return res.status(401).json({
-            message: "Please log in"
-        });
+function requireAdmin(req, res, next) {
+    if (req.session && req.session.isAdmin) {
+        return next();
     }
-
-    req.username = session.username;
-    next();
+    return res.status(401).json({ message: "You must be logged in" });
 }
 
-// Serve the admin-only HTML pages themselves only to logged-in
-// users. These routes are registered before express.static, so
-// Express matches them first and static never gets a chance to
-// hand the file out for free.
-const adminPages = [
+// Admin-only pages are served manually so the session is checked
+// BEFORE the HTML file is ever sent to the browser.
+const protectedPages = [
     "dashboard.html",
+    "add-page.html",
     "add-blog.html",
     "edit-blog.html",
-    "add-page.html",
     "edit-topic.html",
     "enquiries.html"
 ];
 
-adminPages.forEach((page) => {
+protectedPages.forEach((page) => {
     app.get(`/${page}`, (req, res) => {
-        const session = getSessionFromRequest(req);
-
-        if (!session) {
+        if (!req.session || !req.session.isAdmin) {
             return res.redirect("/admin-login.html");
         }
-
+        res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
         res.sendFile(path.join(__dirname, page));
     });
 });
@@ -179,13 +141,18 @@ db.connect((err) => {
 
 
 // ======================================================
-// LOGIN
+// LOGIN / LOGOUT / SESSION
 // ======================================================
+
+const loginAttempts = new Map();
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 10 * 60 * 1000;
 
 app.post("/login", (req, res) => {
 
-    const username = req.body.username;
+    const username = req.body.username?.trim();
     const password = req.body.password;
+    const ip = req.ip;
 
     if (!username || !password) {
         return res.status(400).json({
@@ -193,13 +160,20 @@ app.post("/login", (req, res) => {
         });
     }
 
+    const attempt = loginAttempts.get(ip);
+    if (attempt && attempt.count >= MAX_ATTEMPTS && Date.now() - attempt.first < LOCKOUT_MS) {
+        return res.status(429).json({
+            message: "Too many failed attempts. Try again later."
+        });
+    }
+
     const sql = `
         SELECT *
         FROM admins
-        WHERE username = ? AND password = ?
+        WHERE username = ?
     `;
 
-    db.query(sql, [username, password], (err, result) => {
+    db.query(sql, [username], async (err, result) => {
 
         if (err) {
             console.error("Login database error:", err);
@@ -209,65 +183,73 @@ app.post("/login", (req, res) => {
             });
         }
 
-        if (result.length > 0) {
+        const admin = result[0];
+        const valid = admin && await bcrypt.compare(password, admin.password);
 
-            const token = createSession(username);
+        if (!valid) {
 
-            res.cookie("sid", token, {
-                httpOnly: true,
-                sameSite: "lax",
-                maxAge: SESSION_DURATION
+            const rec = loginAttempts.get(ip) || { count: 0, first: Date.now() };
+            rec.count += 1;
+            loginAttempts.set(ip, rec);
+
+            return res.status(401).json({
+                message: "Wrong username or password"
             });
-
-            return res.json({
-                message: "Login successful"
-            });
-
         }
 
-        res.status(401).json({
-            message: "Wrong username or password"
+        loginAttempts.delete(ip);
+
+        req.session.regenerate((regenErr) => {
+
+            if (regenErr) {
+                console.error("Session error:", regenErr);
+                return res.status(500).json({
+                    message: "Login failed, please try again"
+                });
+            }
+
+            req.session.isAdmin = true;
+            req.session.username = admin.username;
+
+            res.json({
+                message: "Login successful",
+                username: admin.username
+            });
         });
 
     });
 
 });
 
-
-// LOGOUT
 
 app.post("/logout", (req, res) => {
 
-    const session = getSessionFromRequest(req);
-
-    if (session) {
-        sessions.delete(session.token);
+    if (!req.session) {
+        return res.json({ message: "Logged out" });
     }
 
-    res.clearCookie("sid");
+    req.session.destroy((err) => {
 
-    res.json({
-        message: "Logged out"
+        res.clearCookie("cms.sid", { path: "/" });
+
+        if (err) {
+            console.error("Logout error:", err);
+            return res.status(500).json({ message: "Logout failed" });
+        }
+
+        res.json({ message: "Logged out" });
     });
 
 });
 
 
-// CHECK CURRENT SESSION
+app.get("/session", (req, res) => {
 
-app.get("/me", (req, res) => {
-
-    const session = getSessionFromRequest(req);
-
-    if (!session) {
-        return res.status(401).json({
-            message: "Not logged in"
-        });
+    if (req.session && req.session.isAdmin) {
+        return res.json({ loggedIn: true, username: req.session.username });
     }
 
-    res.json({
-        username: session.username
-    });
+    res.json({ loggedIn: false });
 
 });
 
@@ -324,9 +306,9 @@ app.post("/contact-messages", (req, res) => {
 });
 
 
-// GET CONTACT MESSAGES
+// GET CONTACT MESSAGES (admin only — this is private enquiry data)
 
-app.get("/contact-messages", requireAuth, (req, res) => {
+app.get("/contact-messages", requireAdmin, (req, res) => {
 
     const sql = `
         SELECT *
@@ -425,7 +407,7 @@ app.get("/blogs/:id", (req, res) => {
 
 // ADD BLOG POST
 
-app.post("/blogs", requireAuth, uploadAttachment.single("attachment"), (req, res) => {
+app.post("/blogs", requireAdmin, uploadAttachment.single("attachment"), (req, res) => {
 
     const title = req.body.title?.trim();
     const content = req.body.content?.trim();
@@ -478,7 +460,7 @@ app.post("/blogs", requireAuth, uploadAttachment.single("attachment"), (req, res
 
 // EDIT BLOG POST
 
-app.put("/blogs/:id", requireAuth, uploadAttachment.single("attachment"), (req, res) => {
+app.put("/blogs/:id", requireAdmin, uploadAttachment.single("attachment"), (req, res) => {
 
     const id = req.params.id;
 
@@ -570,7 +552,7 @@ app.put("/blogs/:id", requireAuth, uploadAttachment.single("attachment"), (req, 
 
 // DELETE BLOG POST
 
-app.delete("/blogs/:id", requireAuth, (req, res) => {
+app.delete("/blogs/:id", requireAdmin, (req, res) => {
 
     const id = req.params.id;
 
@@ -686,7 +668,7 @@ app.get("/topics/:id", (req, res) => {
 
 // EDIT TOPIC
 
-app.put("/topics/:id", requireAuth, (req, res) => {
+app.put("/topics/:id", requireAdmin, (req, res) => {
 
     const title = req.body.title?.trim();
     const content = req.body.content?.trim();
@@ -732,7 +714,7 @@ app.put("/topics/:id", requireAuth, (req, res) => {
 
 // DELETE TOPIC
 
-app.delete("/topics/:id", requireAuth, (req, res) => {
+app.delete("/topics/:id", requireAdmin, (req, res) => {
 
     const sql = `
         DELETE FROM topics
@@ -795,7 +777,7 @@ app.get("/pages", (req, res) => {
 
 // ADD NEW PAGE
 
-app.post("/pages", requireAuth, (req, res) => {
+app.post("/pages", requireAdmin, (req, res) => {
 
     const title = req.body.title?.trim();
     const youtube_url = req.body.youtube_url?.trim();
@@ -843,7 +825,7 @@ app.post("/pages", requireAuth, (req, res) => {
 
 // DELETE PAGE
 
-app.delete("/pages/:id", requireAuth, (req, res) => {
+app.delete("/pages/:id", requireAdmin, (req, res) => {
 
     const id = req.params.id;
 
@@ -875,7 +857,7 @@ app.delete("/pages/:id", requireAuth, (req, res) => {
 
 // EDIT PAGE TITLE
 
-app.put("/pages/:id", requireAuth, (req, res) => {
+app.put("/pages/:id", requireAdmin, (req, res) => {
 
     const id = req.params.id;
     const title = req.body.title?.trim();

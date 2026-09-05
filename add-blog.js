@@ -1,8 +1,4 @@
-const username = localStorage.getItem("username");
-
-if (!username) {
-    window.location.href = "admin-login.html";
-}
+requireLogin();
 
 // Register a custom format so the underline itself can have its own color
 const Parchment = Quill.import("parchment");
@@ -115,6 +111,7 @@ form.addEventListener("submit", async (event) => {
 
         const response = await fetch("/blogs", {
             method: "POST",
+            credentials: "same-origin",
             body: formData
         });
 

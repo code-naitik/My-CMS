@@ -1,23 +1,5 @@
-const username = localStorage.getItem("username");
-
-if (!username) {
-    window.location.href = "admin-login.html";
-} else {
-    document.querySelector("#username").textContent = username;
-}
-
-document.querySelector("#logout-link").addEventListener("click", async (event) => {
-    event.preventDefault();
-
-    try {
-        await fetch("/logout", { method: "POST" });
-    } catch (error) {
-        console.log("Logout request failed:", error);
-    }
-
-    localStorage.removeItem("username");
-    window.location.href = "home.html";
-});
+requireLogin();
+wireLogoutLink();
 
 const messagesContainer = document.querySelector("#contact-messages");
 const messagesStatus = document.querySelector("#messages-status");
@@ -53,7 +35,7 @@ async function loadContactMessages() {
     messagesContainer.replaceChildren();
 
     try {
-        const response = await fetch("/contact-messages");
+        const response = await fetch("/contact-messages", { credentials: "same-origin" });
         const messages = await response.json();
 
         if (!response.ok) {

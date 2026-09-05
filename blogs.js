@@ -1,6 +1,6 @@
 const publishedBlogs = document.querySelector("#published-blogs");
 const topicNotes = document.querySelector("#topic-notes");
-const isAdmin = !!localStorage.getItem("username");
+let isAdmin = false;
 
 function excerpt(content) {
     const plainText = content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -60,7 +60,8 @@ async function deleteBlog(id) {
     if (!confirmed) return;
 
     const response = await fetch(`/blogs/${id}`, {
-        method: "DELETE"
+        method: "DELETE",
+        credentials: "same-origin"
     });
 
     const data = await response.json();
@@ -115,19 +116,27 @@ async function deleteTopic(id) {
     const confirmed = confirm("Are you sure you want to delete this topic?");
     if (!confirmed) return;
 
-    const response = await fetch(`/topics/${id}`, { method: "DELETE" });
+    const response = await fetch(`/topics/${id}`, {
+        method: "DELETE",
+        credentials: "same-origin"
+    });
     const data = await response.json();
     alert(data.message);
     loadTopics();
 }
 
-loadPublishedBlogs();
-loadTopics();
-
 const dashboardLink = document.querySelector("#dashboard-link");
 
-if (isAdmin) {
-    dashboardLink.style.display = "inline";
-} else {
-    dashboardLink.style.display = "none";
-}
+fetch("/session", { credentials: "same-origin" })
+    .then((res) => res.json())
+    .then((data) => {
+        isAdmin = !!data.loggedIn;
+        loadPublishedBlogs();
+        loadTopics();
+        dashboardLink.style.display = isAdmin ? "inline" : "none";
+    })
+    .catch(() => {
+        loadPublishedBlogs();
+        loadTopics();
+        dashboardLink.style.display = "none";
+    });

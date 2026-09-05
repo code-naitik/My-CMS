@@ -1,5 +1,4 @@
-const username = localStorage.getItem("username");
-if (!username) window.location.href = "admin-login.html";
+requireLogin();
 
 const topicId = new URLSearchParams(window.location.search).get("id");
 const form = document.querySelector("#topic-form");
@@ -31,6 +30,7 @@ form.addEventListener("submit", async (event) => {
     try {
         const response = await fetch(`/topics/${topicId}`, {
             method: "PUT",
+            credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 title: titleInput.value,

@@ -1,3 +1,12 @@
+window.addEventListener("pageshow", (event) => {
+    if (event.persisted) {
+        const usernameField = document.querySelector("#username");
+        const passwordField = document.querySelector("#password");
+        if (usernameField) usernameField.value = "";
+        if (passwordField) passwordField.value = "";
+    }
+});
+
 const loginForm = document.querySelector("#admin-login-form");
 
 if (loginForm) {
@@ -17,6 +26,7 @@ if (loginForm) {
 
             const response = await fetch("/login", {
                 method: "POST",
+                credentials: "same-origin",
                 headers: {
                     "Content-Type": "application/json"
                 },
@@ -28,9 +38,7 @@ if (loginForm) {
 
             const data = await response.json();
 
-            if (data.message === "Login successful") {
-
-                localStorage.setItem("username", username);
+            if (response.ok) {
 
                 window.location.href = "dashboard.html";
 
